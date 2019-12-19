@@ -7,6 +7,7 @@ namespace ResultOfTask
         private None()
         {
         }
+
     }
     public struct Result<T>
     {
@@ -42,6 +43,12 @@ namespace ResultOfTask
             return new Result<T>(e);
         }
 
+        /*
+        public static Result<T> ReaplaceError<T>(Func<T, string> f)
+        {
+            return new Result<T>();
+        }
+        */
         public static Result<T> Of<T>(Func<T> f, string error = null)
         {
             try
@@ -58,13 +65,19 @@ namespace ResultOfTask
             this Result<TInput> input,
             Func<TInput, TOutput> continuation)
         {
-            throw new NotImplementedException();
+            return input.Then(i => Of(() => continuation(i)));           
         }
 
         public static Result<TOutput> Then<TInput, TOutput>(
             this Result<TInput> input,
             Func<TInput, Result<TOutput>> continuation)
         {
+            if (input.IsSuccess)
+            {
+                return continuation(input.Value);
+            }
+            return Fail<TOutput>(input.Error);
+            
             throw new NotImplementedException();
         }
 
@@ -72,7 +85,27 @@ namespace ResultOfTask
             this Result<TInput> input,
             Action<string> handleError)
         {
-            throw new NotImplementedException();
+            if (!input.IsSuccess) handleError(input.Error);
+            return input;          
         }
+
+        public static Result<TInput> ReplaceError<TInput>(
+            this Result<TInput> input,
+            Func<Result<TInput>, string> f)
+        {
+            if (!input.IsSuccess)
+                return Fail<TInput>(f(input));
+            return input;
+            
+        }
+        
+        public static Result<TInput> RefineError<TInput>(
+            this Result<TInput> input,
+            string message)
+        {
+            return ReplaceError(input, i => message + ". " + i.Error);
+        }
+
+
     }
 }
